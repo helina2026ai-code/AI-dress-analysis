@@ -1,0 +1,7 @@
+{
+  "name": "AI 造型設計師 - Vogue Canvas Stylist",
+  "description": "拍照即時穿搭診斷與美學評分，以圖文並茂動態 Canvas 呈現雜誌風儀表板，搭配時尚語音講評。",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
