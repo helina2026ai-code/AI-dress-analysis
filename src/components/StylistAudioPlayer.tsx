@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Volume2, VolumeX, Play, Pause, RotateCcw, Sparkles, Mic, Loader2 } from 'lucide-react';
 import { StylistAudioController } from '../utils/audio';
+import { IS_STATIC_DEMO } from '../config';
 
 interface StylistAudioPlayerProps {
   spokenCritique: string;
@@ -17,7 +18,7 @@ export const StylistAudioPlayer: React.FC<StylistAudioPlayerProps> = ({
   const [isLoadingAudio, setIsLoadingAudio] = useState(false);
   const [selectedVoice, setSelectedVoice] = useState<'Kore' | 'Zephyr' | 'Fenrir'>('Kore');
   const [audioCachedUrl, setAudioCachedUrl] = useState<string | null>(null);
-  const [useBrowserTTS, setUseBrowserTTS] = useState(false);
+  const useBrowserTTS = IS_STATIC_DEMO;
 
   const audioControllerRef = useRef<StylistAudioController | null>(null);
 
@@ -136,7 +137,7 @@ export const StylistAudioPlayer: React.FC<StylistAudioPlayerProps> = ({
               {stylistName}
             </span>
             <span className="text-xs px-2 py-0.5 rounded-full bg-stone-800 text-stone-400 border border-stone-700">
-              AI 語音講評
+              {IS_STATIC_DEMO ? '瀏覽器朗讀' : 'AI 語音講評'}
             </span>
           </div>
 
@@ -169,6 +170,7 @@ export const StylistAudioPlayer: React.FC<StylistAudioPlayerProps> = ({
           </div>
 
           {/* Voice Persona Selector */}
+          {!IS_STATIC_DEMO && (
           <div className="flex items-center bg-stone-950/80 rounded-xl p-1 border border-stone-800 text-xs">
             <button
               onClick={() => handleVoiceChange('Kore')}
@@ -204,6 +206,7 @@ export const StylistAudioPlayer: React.FC<StylistAudioPlayerProps> = ({
               沉穩權威 (Fenrir)
             </button>
           </div>
+          )}
 
           {/* Action Button: Play / Pause */}
           <button

@@ -20,6 +20,7 @@ import { FashionCanvasDashboard } from './components/FashionCanvasDashboard';
 import { StylistAudioPlayer } from './components/StylistAudioPlayer';
 import { PhotoCaptureModule } from './components/PhotoCaptureModule';
 import { DiagnosticTabs } from './components/DiagnosticTabs';
+import { IS_STATIC_DEMO } from './config';
 
 export default function App() {
   const [currentImage, setCurrentImage] = useState<string>(PRESET_OUTFITS[0].thumbnail);
@@ -46,6 +47,10 @@ export default function App() {
     photoBase64: string,
     preferences: { occasion: string; goal: string; genderVibe: string }
   ) => {
+    if (IS_STATIC_DEMO) {
+      setErrorMessage('目前為展示模式，照片分析尚未啟用。');
+      return;
+    }
     setCurrentImage(photoBase64);
     setIsLoading(true);
     setErrorMessage(null);
@@ -106,7 +111,9 @@ export default function App() {
                 </span>
               </div>
               <p className="text-[11px] text-stone-400 hidden sm:block">
-                拍照即時評分 • 圖文並茂 Canvas 儀表板 • 秀場級語音講評
+                {IS_STATIC_DEMO
+                  ? '穿搭診斷範例 • 圖文並茂 Canvas 儀表板 • 瀏覽器語音朗讀'
+                  : '拍照即時評分 • 圖文並茂 Canvas 儀表板 • 秀場級語音講評'}
               </p>
             </div>
           </div>
@@ -115,6 +122,8 @@ export default function App() {
           <div className="flex items-center gap-2.5">
             <button
               onClick={() => setShowPhotoSection((prev) => !prev)}
+              disabled={IS_STATIC_DEMO}
+              title={IS_STATIC_DEMO ? '展示模式尚未啟用照片分析' : undefined}
               className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl border text-xs sm:text-sm font-semibold transition cursor-pointer ${
                 showPhotoSection
                   ? 'bg-amber-500 text-stone-950 border-amber-400 shadow-md'
@@ -122,7 +131,7 @@ export default function App() {
               }`}
             >
               <Camera className="w-4 h-4" />
-              <span>{showPhotoSection ? '收起相機面板' : '拍攝 / 換穿搭'}</span>
+              <span>{IS_STATIC_DEMO ? 'AI 分析尚未啟用' : showPhotoSection ? '收起相機面板' : '拍攝 / 換穿搭'}</span>
               {showPhotoSection ? (
                 <ChevronUp className="w-3.5 h-3.5" />
               ) : (
@@ -135,6 +144,11 @@ export default function App() {
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+        {IS_STATIC_DEMO && (
+          <div role="status" className="p-4 rounded-xl bg-amber-950/40 border border-amber-500/40 text-amber-200 text-sm">
+            展示模式：以下為預先提供的穿搭範例，可瀏覽診斷卡片、匯出圖片並以瀏覽器朗讀；照片分析尚未啟用。
+          </div>
+        )}
         {/* Error Alert if any */}
         {errorMessage && (
           <div className="p-4 rounded-xl bg-red-950/60 border border-red-800 text-red-200 text-sm flex items-center justify-between">
@@ -230,7 +244,7 @@ export default function App() {
         </div>
 
         {/* SECTION 5: QUICK PRESET CAROUSEL FOOTER (for immediate switching anytime) */}
-        {!showPhotoSection && (
+        {!showPhotoSection && !IS_STATIC_DEMO && (
           <div className="p-4 rounded-2xl bg-stone-900/60 border border-stone-800/80 space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-stone-300 flex items-center gap-1.5">
@@ -288,7 +302,9 @@ export default function App() {
           Vogue AI Stylist Studio • Haute Couture Aesthetic Engine
         </p>
         <p>
-          結合 Gemini 3.8 Flash 多模態視覺分析與 Gemini TTS 語音朗讀 • 打造動態圖文並茂的 Canvas 造型評分體驗
+          {IS_STATIC_DEMO
+            ? '展示版提供穿搭診斷範例與瀏覽器語音朗讀 • AI 照片分析服務尚未啟用'
+            : '結合 Gemini 3.8 Flash 多模態視覺分析與 Gemini TTS 語音朗讀 • 打造動態圖文並茂的 Canvas 造型評分體驗'}
         </p>
         <p className="text-stone-400">hollow world</p>
         <a

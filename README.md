@@ -16,6 +16,16 @@
 3. 啟動：
    `npm run dev`
 
+## GitHub Pages 展示網站
+
+網站網址：[AI Dress Analysis](https://helina2026ai-code.github.io/AI-dress-analysis/)。
+
+`.github/workflows/deploy-pages.yml` 會在推送至 `main` 後，自動安裝套件、檢查 TypeScript、建置並發布網站。也可以在 GitHub 的 Actions 頁面手動執行。儲存庫的 Settings → Pages → Source 必須設為 **GitHub Actions**。
+
+GitHub Pages 是靜態託管，無法執行本專案的 Express 後端。Pages 版本會標示「展示模式」，提供預先設定的診斷範例、Canvas 儀表板與瀏覽器朗讀，停用照片分析與 Gemini 語音選擇。本地執行與 Docker 部署仍使用原本的 AI 後端。
+
+部署工作流程設定 `VITE_BASE_PATH` 為儲存庫子路徑，並設定 `VITE_STATIC_DEMO=true`。這些是公開的前端建置設定；請勿將 `GEMINI_API_KEY` 加入任何 `VITE_` 變數或靜態網頁。若要使用完整的 AI 照片分析，需另行部署 Express 後端並在後端設定 `GEMINI_API_KEY`。
+
 ## Hugging Face Space
 
 前往現有的 [AI Dress Analysis Hugging Face Space](https://huggingface.co/spaces/HelinaChang/AI_Dress_analysis)。
