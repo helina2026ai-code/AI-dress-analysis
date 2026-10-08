@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import { GoogleGenAI, Type } from '@google/genai';
 
-dotenv.config();
+dotenv.config({ path: ['.env.local', '.env'] });
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -13,7 +13,10 @@ const app = express();
 const port = Number(process.env.PORT) || 3000;
 const host = process.env.HOST || '0.0.0.0';
 
-if (!process.env.GEMINI_API_KEY) {
+const geminiApiKey = process.env.GEMINI_API_KEY?.trim();
+const hasGeminiApiKey = Boolean(geminiApiKey && geminiApiKey !== 'MY_GEMINI_API_KEY');
+
+if (!hasGeminiApiKey) {
   console.warn('GEMINI_API_KEY is not set. Set it in the environment before running AI analysis.');
 }
 
@@ -21,13 +24,44 @@ if (!process.env.GEMINI_API_KEY) {
 app.use(express.json({ limit: '30mb' }));
 app.use(express.urlencoded({ extended: true, limit: '30mb' }));
 
-const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY,
+const ai = hasGeminiApiKey ? new GoogleGenAI({
+  apiKey: geminiApiKey,
   httpOptions: {
     headers: {
       'User-Agent': 'aistudio-build',
     },
   },
+}) : null;
+
+const allowedOrigins = new Set(
+  (process.env.ALLOWED_ORIGINS || '').split(',').map((origin) => origin.trim()).filter(Boolean)
+);
+
+app.use('/api', (req, res, next) => {
+  const origin = req.headers.origin;
+  res.vary('Origin');
+  if (origin && allowedOrigins.has(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  }
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(204);
+    return;
+  }
+  next();
+});
+
+app.get('/api/health', (_req, res) => {
+  res.json({ status: 'ok', aiConfigured: Boolean(ai) });
+});
+
+app.use('/api/stylist', (_req, res, next) => {
+  if (!ai) {
+    res.status(503).json({ error: 'AI 服務尚未完成設定，請稍後再試。', fallback: true });
+    return;
+  }
+  next();
 });
 
 // API: Analyze Outfit from Photo
@@ -35,7 +69,7 @@ app.post('/api/stylist/analyze', async (req, res) => {
   try {
     const { imageBase64, occasion, goal, genderVibe } = req.body;
 
-    if (!imageBase64) {
+    if (typeof imageBase64 !== 'string' || !imageBase64.trim()) {
       return res.status(400).json({ error: '請提供穿搭照片。' });
     }
 
@@ -90,8 +124,8 @@ app.post('/api/stylist/analyze', async (req, res) => {
 `;
 
     const generateOutfitAnalysis = () =>
-      ai.models.generateContent({
-        model: 'gemini-3.8-flash',
+      ai!.models.generateContent({
+        model: process.env.GEMINI_ANALYSIS_MODEL || 'gemini-3.8-flash',
         contents: {
           parts: [
             {
@@ -283,37 +317,29 @@ app.post('/api/stylist/analyze', async (req, res) => {
 app.post('/api/stylist/tts', async (req, res) => {
   try {
     const { text, voiceName = 'Kore' } = req.body;
-    if (!text) {
+    if (typeof text !== 'string' || !text.trim()) {
       return res.status(400).json({ error: '缺少朗讀文字。' });
     }
 
-    const ttsResponse = await ai.models.generateContent({
-      model: 'gemini-3.8-flash-lite-tts',
-      contents: [
-        {
-          role: 'user',
-          parts: [
-            {
-              text: text,
-              speechMetadata: {
-                style: 'Elegant, charismatic fashion director, smooth and articulate cadence',
-              },
-            },
-          ],
-        },
-      ],
-      config: {
-        responseModalities: ['AUDIO'],
-        speechConfig: {
-          voiceConfig: {
-            prebuiltVoiceConfig: { voiceName: voiceName },
-          },
-        },
-      },
+    const ttsResponse = await ai!.interactions.create({
+      model: process.env.GEMINI_TTS_MODEL || 'gemini-3.8-flash-lite-tts',
+      input: [{
+        type: 'user_input',
+        content: [{
+          type: 'text',
+          text,
+          annotations: [{
+            type: 'speech_metadata',
+            style: 'Elegant, charismatic fashion director, smooth and articulate cadence',
+          }],
+        }],
+      }],
+      response_format: { type: 'audio', mime_type: 'audio/wav' },
+      generation_config: { speech_config: [{ voice: voiceName }] },
+      store: false,
     });
 
-    const base64Audio =
-      ttsResponse.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+    const base64Audio = ttsResponse.output_audio?.data;
 
     if (base64Audio) {
       return res.json({
@@ -331,6 +357,10 @@ app.post('/api/stylist/tts', async (req, res) => {
       fallback: true,
     });
   }
+});
+
+app.use('/api', (_req, res) => {
+  res.status(404).json({ error: '找不到指定的 API。' });
 });
 
 // Vite middleware in dev or static files in production

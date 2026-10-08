@@ -20,7 +20,7 @@ import { FashionCanvasDashboard } from './components/FashionCanvasDashboard';
 import { StylistAudioPlayer } from './components/StylistAudioPlayer';
 import { PhotoCaptureModule } from './components/PhotoCaptureModule';
 import { DiagnosticTabs } from './components/DiagnosticTabs';
-import { IS_STATIC_DEMO } from './config';
+import { IS_STATIC_DEMO, getApiUrl } from './config';
 
 export default function App() {
   const [currentImage, setCurrentImage] = useState<string>(PRESET_OUTFITS[0].thumbnail);
@@ -51,12 +51,11 @@ export default function App() {
       setErrorMessage('目前為展示模式，照片分析尚未啟用。');
       return;
     }
-    setCurrentImage(photoBase64);
     setIsLoading(true);
     setErrorMessage(null);
 
     try {
-      const response = await fetch('/api/stylist/analyze', {
+      const response = await fetch(getApiUrl('/api/stylist/analyze'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -74,9 +73,7 @@ export default function App() {
 
       const data: StylistAnalysis = await response.json();
       setAnalysis(data);
-      if (data.processedImage) {
-        setCurrentImage(data.processedImage);
-      }
+      setCurrentImage(data.processedImage || photoBase64);
       setShowPhotoSection(false); // Collapse photo picker so dashboard takes center stage
       setAutoPlayAudio(true);
 

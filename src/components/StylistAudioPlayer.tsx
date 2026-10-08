@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Volume2, VolumeX, Play, Pause, RotateCcw, Sparkles, Mic, Loader2 } from 'lucide-react';
 import { StylistAudioController } from '../utils/audio';
-import { IS_STATIC_DEMO } from '../config';
+import { IS_STATIC_DEMO, getApiUrl } from '../config';
 
 interface StylistAudioPlayerProps {
   spokenCritique: string;
@@ -33,11 +33,16 @@ export const StylistAudioPlayer: React.FC<StylistAudioPlayerProps> = ({
     };
   }, []);
 
+  useEffect(() => {
+    audioControllerRef.current?.stop();
+    setAudioCachedUrl(null);
+  }, [spokenCritique]);
+
   // Fetch Gemini TTS Audio
   const fetchTtsAudio = async (text: string, voice: string): Promise<string | null> => {
     try {
       setIsLoadingAudio(true);
-      const res = await fetch('/api/stylist/tts', {
+      const res = await fetch(getApiUrl('/api/stylist/tts'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text, voiceName: voice }),
